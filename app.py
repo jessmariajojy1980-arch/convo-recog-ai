@@ -4,45 +4,46 @@ import nltk
 from nltk.tokenize import word_tokenize
 from collections import Counter
 
-# Initialize NLTK silently
+# Ensure NLTK data is downloaded
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
-    nltk.download('punkt', quiet=True)
+    nltk.download('punkt')
 
 app = Flask(__name__)
 CORS(app)
 
-# Common filler words
+# Common filler words for analysis
 FILLER_WORDS = [
-    "um", "uh", "like", "you know", "actually",
-    "basically", "literally", "so", "well", "okay"
+    "um", "uh", "like", "actually", "basically", 
+    "literally", "so", "well", "okay", "right", "you know"
 ]
 
-# Home page
 @app.route("/")
 def home():
+    # This looks for index.html inside the 'templates' folder
     return render_template("index.html")
 
-# API to analyze text
 @app.route("/analyze", methods=["POST"])
 def analyze():
     data = request.json
-    text = data.get("text", "").lower()
-
-    tokens = word_tokenize(text)
+    raw_text = data.get("text", "").lower()
+    
+    # Tokenize and clean punctuation
+    tokens = [word for word in word_tokenize(raw_text) if word.isalpha()]
     total_words = len(tokens)
 
-    # Count filler words
-    filler_count = {filler: text.count(filler) for filler in FILLER_WORDS}
+    # Count filler words based on exact token matches
+    filler_count = {filler: tokens.count(filler) for filler in FILLER_WORDS}
 
-    # Count repeated words
+    # Count word frequencies
     word_counts = Counter(tokens)
-    repeated_words = {word: count for word, count in word_counts.items() if count > 2}
-
-    # Remove filler words from repetition list
-    for filler in FILLER_WORDS:
-        repeated_words.pop(filler, None)
+    
+    # Identify words repeated more than 2 times (excluding filler words)
+    repeated_words = {
+        word: count for word, count in word_counts.items() 
+        if count > 2 and word not in FILLER_WORDS
+    }
 
     return jsonify({
         "total_words": total_words,
@@ -51,4 +52,4 @@ def analyze():
     })
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
