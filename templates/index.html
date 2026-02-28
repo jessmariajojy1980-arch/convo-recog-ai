@@ -1,66 +1,799 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>English Speech Analyzer</title>
-    <style>
-        body { font-family: Arial; text-align: center; padding: 50px; background: #f4f6f8; }
-        button { padding: 12px 24px; font-size: 18px; margin: 10px; cursor: pointer; }
-        #result { margin-top: 30px; text-align: left; width: 60%; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Speakeasy — Speech Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0e1420;
+  --surface2: #131b2a;
+  --border: rgba(99,190,255,0.1);
+  --teal: #3de0c8;
+  --teal-dim: rgba(61,224,200,0.15);
+  --teal-glow: rgba(61,224,200,0.35);
+  --red: #ff5c6a;
+  --red-dim: rgba(255,92,106,0.15);
+  --amber: #ffbb44;
+  --text: #e8edf5;
+  --text-muted: #5e7a9a;
+  --text-mid: #8faab8;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(61,224,200,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(61,224,200,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -40%;
+  left: -20%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(61,224,200,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* Header */
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 56px;
+  animation: fadeDown 0.7s ease both;
+}
+
+.logo-group h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.6rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--teal) 0%, #7ef5e8 50%, var(--text) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.logo-group p {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--teal);
+  border: 1px solid var(--teal-dim);
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--teal-dim);
+  margin-top: 8px;
+}
+
+/* Main recorder card */
+.recorder-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 48px 40px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.8s ease 0.1s both;
+}
+
+.recorder-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity: 0.5;
+}
+
+/* Mic button */
+.mic-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.mic-outer {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+}
+
+.mic-ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 2px solid var(--teal-dim);
+  transition: all 0.3s ease;
+}
+
+.mic-ring-2 {
+  position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+  border: 1px solid rgba(61,224,200,0.07);
+  transition: all 0.3s ease;
+}
+
+.mic-btn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #0f1e30, #0a1520);
+  border: 2px solid rgba(61,224,200,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 30px rgba(61,224,200,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+  z-index: 1;
+}
+
+.mic-btn:hover {
+  border-color: var(--teal);
+  box-shadow: 0 0 50px rgba(61,224,200,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+  transform: scale(1.04);
+}
+
+.mic-btn:hover + .mic-ring { border-color: rgba(61,224,200,0.3); }
+
+.mic-icon {
+  width: 36px;
+  height: 36px;
+  fill: var(--teal);
+  transition: all 0.3s;
+}
+
+.mic-btn.recording {
+  background: linear-gradient(145deg, #1a0f1a, #150a14);
+  border-color: var(--red);
+  box-shadow: 0 0 50px rgba(255,92,106,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: micPulse 1.5s ease-in-out infinite;
+}
+
+.mic-btn.recording .mic-icon { fill: var(--red); }
+.mic-btn.recording + .mic-ring { border-color: rgba(255,92,106,0.4); animation: ringPulse 1.5s ease-in-out infinite; }
+.mic-btn.recording ~ .mic-ring-2 { border-color: rgba(255,92,106,0.15); animation: ringPulse 1.5s ease-in-out 0.3s infinite; }
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 50px rgba(255,92,106,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
+  50% { box-shadow: 0 0 80px rgba(255,92,106,0.5), inset 0 1px 0 rgba(255,255,255,0.05); }
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.6; }
+}
+
+/* Waveform */
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+}
+
+.wave-bar {
+  width: 4px;
+  background: var(--teal);
+  border-radius: 2px;
+  height: 6px;
+  opacity: 0.3;
+  transition: height 0.1s ease, opacity 0.3s;
+}
+
+.waveform.active .wave-bar {
+  opacity: 1;
+  animation: waveAnim 0.8s ease-in-out infinite;
+}
+
+.waveform.active .wave-bar:nth-child(1) { animation-delay: 0.0s; }
+.waveform.active .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+.waveform.active .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+.waveform.active .wave-bar:nth-child(4) { animation-delay: 0.05s; }
+.waveform.active .wave-bar:nth-child(5) { animation-delay: 0.15s; }
+.waveform.active .wave-bar:nth-child(6) { animation-delay: 0.25s; }
+.waveform.active .wave-bar:nth-child(7) { animation-delay: 0.08s; }
+.waveform.active .wave-bar:nth-child(8) { animation-delay: 0.18s; }
+.waveform.active .wave-bar:nth-child(9) { animation-delay: 0.28s; }
+.waveform.active .wave-bar:nth-child(10) { animation-delay: 0.12s; }
+.waveform.active .wave-bar:nth-child(11) { animation-delay: 0.22s; }
+.waveform.active .wave-bar:nth-child(12) { animation-delay: 0.06s; }
+
+@keyframes waveAnim {
+  0%, 100% { height: 6px; }
+  50% { height: 32px; }
+}
+
+/* Status */
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: background 0.3s;
+}
+.status-dot.ready { background: var(--text-muted); }
+.status-dot.recording { background: var(--red); box-shadow: 0 0 10px var(--red); animation: blink 1s ease-in-out infinite; }
+.status-dot.analyzing { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+.status-dot.done { background: var(--teal); box-shadow: 0 0 10px var(--teal); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Controls row */
+.controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn:hover { border-color: rgba(99,190,255,0.3); color: var(--text); background: rgba(99,190,255,0.07); }
+
+.btn-stop {
+  border-color: rgba(255,92,106,0.3);
+  color: var(--red);
+  background: var(--red-dim);
+}
+.btn-stop:hover { border-color: var(--red); background: rgba(255,92,106,0.25); color: var(--red); }
+.btn-stop:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Transcript */
+.transcript-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.transcript-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text-mid);
+  min-height: 60px;
+  font-style: italic;
+}
+
+.transcript-text.has-content { font-style: normal; color: var(--text); }
+.transcript-text .interim { color: var(--text-muted); }
+
+/* Results */
+#results {
+  animation: fadeUp 0.6s ease both;
+  display: none;
+}
+
+#results.visible { display: block; }
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 20px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.6s ease both;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--teal);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.8s ease 0.3s;
+}
+
+.stat-card.animate::after { transform: scaleX(1); }
+
+.stat-card .num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--text-mid) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-card.warn .num { background: linear-gradient(135deg, var(--amber), #ffcc77); -webkit-background-clip: text; background-clip: text; }
+.stat-card.danger .num { background: linear-gradient(135deg, var(--red), #ff8c94); -webkit-background-clip: text; background-clip: text; }
+.stat-card.good .num { background: linear-gradient(135deg, var(--teal), #7ef5e8); -webkit-background-clip: text; background-clip: text; }
+
+.stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.08em; }
+
+/* Rate bar */
+.rate-bar-track {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.rate-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--teal);
+  width: 0%;
+  transition: width 1s cubic-bezier(0.16,1,0.3,1) 0.4s;
+}
+
+/* Tag sections */
+.tag-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 24px 20px;
+  margin-bottom: 16px;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+
+.tag-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tag-card-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tag-count-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border: 1px solid rgba(61,224,200,0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.tag .tag-word { color: var(--text); }
+.tag .tag-num {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  background: rgba(255,255,255,0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.tag.filler {
+  background: rgba(255,92,106,0.1);
+  border: 1px solid rgba(255,92,106,0.2);
+}
+.tag.filler .tag-word { color: #ff8c94; }
+
+.tag.repeat {
+  background: rgba(61,224,200,0.08);
+  border: 1px solid rgba(61,224,200,0.18);
+}
+.tag.repeat .tag-word { color: #7ef5e8; }
+
+.empty-state {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal);
+}
+
+/* Error */
+.error-card {
+  background: rgba(255,92,106,0.07);
+  border: 1px solid rgba(255,92,106,0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.78rem;
+  color: #ff8c94;
+  margin-bottom: 16px;
+}
+
+/* Browser warning */
+#browserWarn {
+  display: none;
+  background: rgba(255,187,68,0.08);
+  border: 1px solid rgba(255,187,68,0.25);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--amber);
+  margin-bottom: 20px;
+  letter-spacing: 0.05em;
+}
+
+/* Animations */
+@keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+@keyframes popIn { from { opacity:0; transform: scale(0.7); } to { opacity:1; transform: scale(1); } }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .recorder-card { padding: 32px 24px; }
+  .results-grid { grid-template-columns: 1fr; }
+  header { flex-direction: column; gap: 12px; }
+}
+</style>
 </head>
 <body>
+<div class="wrapper">
 
-<h1>🎙 English Speech Analyzer</h1>
-<p>Click "Start Recording" and speak. Then click "Stop Recording" to analyze.</p>
+  <header>
+    <div class="logo-group">
+      <h1>Speakeasy</h1>
+      <p>Speech Pattern Analyzer</p>
+    </div>
+    <div class="badge">v2.0 — LIVE</div>
+  </header>
 
-<button onclick="startRecording()">Start Recording</button>
-<button onclick="stopRecording()">Stop Recording</button>
+  <div id="browserWarn">⚠ Web Speech API requires Chrome or Edge for microphone access.</div>
 
-<p id="transcript"></p>
-<div id="result"></div>
+  <div class="recorder-card">
+    <div class="mic-stage">
+
+      <!-- Mic button -->
+      <div class="mic-outer" onclick="toggleRecording()">
+        <button class="mic-btn" id="micBtn" aria-label="Toggle recording">
+          <svg class="mic-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1 18.93V22h2v-2.07A8.001 8.001 0 0 0 20 12h-2a6 6 0 0 1-12 0H4a8.001 8.001 0 0 0 7 7.93z"/>
+          </svg>
+        </button>
+        <div class="mic-ring"></div>
+        <div class="mic-ring-2"></div>
+      </div>
+
+      <!-- Waveform -->
+      <div class="waveform" id="waveform">
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-line">
+        <div class="status-dot ready" id="statusDot"></div>
+        <span id="statusText">Click the mic to begin</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn btn-stop" id="stopBtn" disabled onclick="stopRecording()">Stop & Analyze</button>
+        <button class="btn" id="clearBtn" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-section">
+      <div class="section-label">Live Transcript</div>
+      <div class="transcript-text" id="transcript">Start speaking and your words will appear here in real time...</div>
+    </div>
+  </div>
+
+  <!-- Results area -->
+  <div id="results">
+    <!-- Stats row -->
+    <div class="results-grid" id="statsGrid"></div>
+    <!-- Filler words -->
+    <div class="tag-card" id="fillerCard"></div>
+    <!-- Repeated words -->
+    <div class="tag-card" id="repeatCard"></div>
+  </div>
+
+</div>
 
 <script>
-let recognition;
-let finalTranscript = "";
+let recognition, finalTranscript = '', isRecording = false;
+
+if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+  document.getElementById('browserWarn').style.display = 'block';
+}
+
+function setStatus(text, mode = 'ready') {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').className = 'status-dot ' + mode;
+}
+
+function toggleRecording() {
+  if (isRecording) return;
+  startRecording();
+}
 
 function startRecording() {
-    recognition = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = "en-US";
-    recognition.continuous = true;
+  finalTranscript = '';
+  isRecording = true;
 
-    recognition.onresult = function(event) {
-        finalTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-            finalTranscript += event.results[i][0].transcript;
-        }
-        document.getElementById("transcript").innerText = finalTranscript;
-    };
+  const t = document.getElementById('transcript');
+  t.textContent = '';
+  t.classList.remove('has-content');
+  document.getElementById('results').classList.remove('visible');
 
-    recognition.start();
+  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    setStatus('Recording — speak naturally', 'recording');
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('waveform').classList.add('active');
+    document.getElementById('stopBtn').disabled = false;
+  };
+
+  recognition.onresult = e => {
+    finalTranscript = '';
+    let interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    const t = document.getElementById('transcript');
+    t.classList.add('has-content');
+    t.innerHTML = finalTranscript + (interim ? `<span class="interim">${interim}</span>` : '');
+  };
+
+  recognition.onerror = e => {
+    setStatus('Mic error: ' + e.error, 'ready');
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('waveform').classList.remove('active');
+    document.getElementById('stopBtn').disabled = true;
+    isRecording = false;
+    showError('Microphone error: ' + e.error + '. Check browser permissions and try again.');
+  };
+
+  recognition.onend = () => {
+    if (isRecording) { isRecording = false; }
+  };
+
+  recognition.start();
 }
 
 function stopRecording() {
-    recognition.stop();
-    analyzeText(finalTranscript);
+  if (recognition) recognition.stop();
+  isRecording = false;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('waveform').classList.remove('active');
+  document.getElementById('stopBtn').disabled = true;
+  setStatus('Analyzing speech patterns...', 'analyzing');
+  analyzeText(finalTranscript.trim());
+}
+
+function clearAll() {
+  if (recognition) try { recognition.stop(); } catch(e) {}
+  isRecording = false;
+  finalTranscript = '';
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('waveform').classList.remove('active');
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('transcript').textContent = 'Start speaking and your words will appear here in real time...';
+  document.getElementById('transcript').classList.remove('has-content');
+  document.getElementById('results').classList.remove('visible');
+  setStatus('Click the mic to begin', 'ready');
 }
 
 function analyzeText(text) {
-    fetch("http://127.0.0.1:5000/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById("result").innerHTML = `
-            <h3>Analysis Report</h3>
-            <p><b>Total Words:</b> ${data.total_words}</p>
-            <p><b>Filler Words:</b> ${JSON.stringify(data.filler_words)}</p>
-            <p><b>Repeated Words:</b> ${JSON.stringify(data.repeated_words)}</p>
-        `;
-    });
+  if (!text) {
+    setStatus('No speech detected', 'ready');
+    showError('No speech was detected. Please try recording again.');
+    return;
+  }
+
+  fetch('http://127.0.0.1:5000/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  })
+  .then(r => { if (!r.ok) throw new Error('Server error ' + r.status); return r.json(); })
+  .then(data => {
+    if (data.error) throw new Error(data.error);
+    renderResults(data);
+    setStatus('Analysis complete', 'done');
+  })
+  .catch(err => {
+    setStatus('Error', 'ready');
+    showError(err.message + ' — Make sure Flask is running on port 5000.');
+  });
+}
+
+function showError(msg) {
+  const r = document.getElementById('results');
+  r.innerHTML = `<div class="error-card">⚠ ${msg}</div>`;
+  r.classList.add('visible');
+}
+
+function renderResults(data) {
+  const fillerEntries = Object.entries(data.filler_words || {}).sort((a,b) => b[1]-a[1]);
+  const repeatEntries = Object.entries(data.repeated_words || {}).slice(0, 18);
+  const rate = data.filler_rate || 0;
+  const rateClass = rate < 5 ? 'good' : rate < 15 ? 'warn' : 'danger';
+  const rateBarColor = rate < 5 ? 'var(--teal)' : rate < 15 ? 'var(--amber)' : 'var(--red)';
+  const totalFillers = fillerEntries.reduce((s,[,v]) => s+v, 0);
+
+  // Stats grid
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card good">
+      <div class="num">${data.total_words}</div>
+      <div class="stat-label">Total Words</div>
+      <div class="rate-bar-track"><div class="rate-bar-fill" style="background:var(--teal);width:100%"></div></div>
+    </div>
+    <div class="stat-card ${rateClass}">
+      <div class="num">${rate}%</div>
+      <div class="stat-label">Filler Rate</div>
+      <div class="rate-bar-track"><div class="rate-bar-fill" id="rateBar" style="background:${rateBarColor}"></div></div>
+    </div>
+    <div class="stat-card ${totalFillers > 10 ? 'danger' : totalFillers > 4 ? 'warn' : 'good'}">
+      <div class="num">${totalFillers}</div>
+      <div class="stat-label">Filler Instances</div>
+      <div class="rate-bar-track"><div class="rate-bar-fill" style="background:${rateBarColor};width:${Math.min(totalFillers*5,100)}%"></div></div>
+    </div>
+  `;
+
+  // Filler tags
+  const fillerHTML = fillerEntries.length
+    ? fillerEntries.map(([w,c], i) =>
+        `<span class="tag filler" style="animation-delay:${i*0.05}s">
+          <span class="tag-word">${w}</span>
+          <span class="tag-num">×${c}</span>
+        </span>`).join('')
+    : `<span class="empty-state">No filler words detected — great job!</span>`;
+
+  document.getElementById('fillerCard').innerHTML = `
+    <div class="tag-card-header">
+      <span class="tag-card-title">Filler Words</span>
+      <span class="tag-count-badge">${fillerEntries.length} types / ${totalFillers} total</span>
+    </div>
+    <div class="tags-wrap">${fillerHTML}</div>
+  `;
+
+  // Repeat tags
+  const repeatHTML = repeatEntries.length
+    ? repeatEntries.map(([w,c], i) =>
+        `<span class="tag repeat" style="animation-delay:${i*0.05}s">
+          <span class="tag-word">${w}</span>
+          <span class="tag-num">×${c}</span>
+        </span>`).join('')
+    : `<span class="empty-state">No significantly repeated words — excellent variety!</span>`;
+
+  document.getElementById('repeatCard').innerHTML = `
+    <div class="tag-card-header">
+      <span class="tag-card-title">Repeated Words</span>
+      <span class="tag-count-badge">${repeatEntries.length} words</span>
+    </div>
+    <div class="tags-wrap">${repeatHTML}</div>
+  `;
+
+  const results = document.getElementById('results');
+  results.classList.add('visible');
+
+  // Animate stat bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.add('animate'));
+    const rb = document.getElementById('rateBar');
+    if (rb) rb.style.width = Math.min(rate * 2, 100) + '%';
+  });
 }
 </script>
-
 </body>
 </html>
